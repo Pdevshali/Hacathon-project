@@ -1,0 +1,123 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: workflow-platform
+  datasource:
+    url: jdbc:h2:mem:workflowdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+# Workflow configuration - change without code rewrite
+workflow:
+  configs:
+    loan-approval:
+      name: "Loan Approval Workflow"
+      description: "Standard loan approval process"
+      stages:
+        - name: VALIDATION
+          order: 1
+          required: true
+        - name: RULE_EVALUATION
+          order: 2
+          required: true
+        - name: EXTERNAL_CHECK
+          order: 3
+          required: true
+        - name: DECISION
+          order: 4
+          required: true
+      rules:
+        - id: CREDIT_SCORE_CHECK
+          name: "Credit Score Minimum"
+          field: creditScore
+          operator: GREATER_THAN_OR_EQUAL
+          value: "650"
+          priority: 1
+          onFail: REJECT
+        - id: INCOME_CHECK
+          name: "Minimum Income Check"
+          field: annualIncome
+          operator: GREATER_THAN_OR_EQUAL
+          value: "300000"
+          priority: 2
+          onFail: MANUAL_REVIEW
+        - id: LOAN_AMOUNT_CHECK
+          name: "Loan-to-Income Ratio"
+          field: loanToIncomeRatio
+          operator: LESS_THAN_OR_EQUAL
+          value: "5.0"
+          priority: 3
+          onFail: REJECT
+        - id: AGE_CHECK
+          name: "Applicant Age Check"
+          field: age
+          operator: GREATER_THAN_OR_EQUAL
+          value: "21"
+          priority: 4
+          onFail: REJECT
+      maxRetries: 3
+      retryDelayMs: 1000
+
+    employee-onboarding:
+      name: "Employee Onboarding Workflow"
+      description: "New employee onboarding process"
+      stages:
+        - name: VALIDATION
+          order: 1
+          required: true
+        - name: RULE_EVALUATION
+          order: 2
+          required: true
+        - name: EXTERNAL_CHECK
+          order: 3
+          required: true
+        - name: DECISION
+          order: 4
+          required: true
+      rules:
+        - id: DOCUMENT_CHECK
+          name: "Documents Submitted"
+          field: documentsSubmitted
+          operator: EQUALS
+          value: "true"
+          priority: 1
+          onFail: MANUAL_REVIEW
+        - id: BACKGROUND_CHECK
+          name: "Background Verification"
+          field: backgroundVerified
+          operator: EQUALS
+          value: "true"
+          priority: 2
+          onFail: REJECT
+        - id: DEPARTMENT_CHECK
+          name: "Valid Department"
+          field: department
+          operator: NOT_EMPTY
+          value: ""
+          priority: 3
+          onFail: REJECT
+      maxRetries: 3
+      retryDelayMs: 1000
+
+  external-dependency:
+    url: "http://mock-external-service"
+    timeout-ms: 3000
+    simulate-failure-rate: 0.2   # 20% simulated failure for demo
+
+logging:
+  level:
+    com.workflow: DEBUG
